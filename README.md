@@ -3,6 +3,9 @@ AWS Course Material
 
 1. Certified Developer: Associate :- ( https://courses.datacumulus.com/downloads/certified-developer-k92/ )
 2. Certified Cloud Solution Architect: Associate: ( https://courses.datacumulus.com/downloads/certified-solutions-architect-pn9/ )
+
+
+
 SELECT
     requestId,
     requestStatus,
@@ -20,7 +23,8 @@ SELECT
     remarks,
     isRollback,
     rfc_number,
-    next_regionId
+    next_regionId,
+    deployedVersion
 FROM (
     SELECT
         aso.request_id AS requestId,
@@ -46,36 +50,14 @@ FROM (
     INNER JOIN
         alerts_ss_onboarding aso ON aow.request_id = aso.request_id
 ) AS subquery1
-WHERE ROW_NUMBER = 1
-
-UNION
-
-SELECT
-    NULL AS requestId,
-    NULL AS requestStatus,
-    NULL AS requesterId,
-    NULL AS requesterName,
-    NULL AS delegateId,
-    NULL AS delegateName,
-    NULL AS mnemonic,
-    NULL AS appName,
-    NULL AS createDate,
-    NULL AS reviewerId,
-    NULL AS reviewerName,
-    NULL AS updateDate,
-    VERSION AS version,
-    NULL AS remarks,
-    NULL AS isRollback,
-    NULL AS rfc_number,
-    NULL AS next_regionId
-FROM (
+LEFT JOIN (
     SELECT
-        WORKFLOW_ID,
-        VERSION,
+        REQUEST_ID,
+        VERSION AS deployedVersion,
         ROW_NUMBER() OVER (PARTITION BY REQUEST_ID ORDER BY WORKFLOW_ID DESC) AS ROWNUMBER
     FROM
         ALERTS_ONBOARDING_WORKFLOW
     WHERE
         request_status = 'DEPLOYED'
-) AS subquery2
-WHERE ROWNUMBER = 1;
+) AS subquery2 ON subquery1.requestId = subquery2.REQUEST_ID AND subquery2.ROWNUMBER = 1;
+
